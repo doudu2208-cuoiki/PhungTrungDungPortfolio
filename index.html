@@ -165,6 +165,11 @@
   }
 
   /* ===== ABOUT page ===== */
+  #page-about {
+    background: var(--ink);
+    min-height: calc(100vh - var(--total-top));
+  }
+
   .about-section {
     background: var(--ink); color: var(--paper);
     padding: 4rem 5rem;
@@ -584,6 +589,10 @@
 </div>
 
 
+<!-- PDF.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
 <!-- PAGE: DỰ ÁN -->
 <div id="page-projects" class="page">
 <style>
@@ -597,11 +606,26 @@
 .lesson-content{padding:2.5rem 2.8rem}
 .lesson-content h3{font-family:"Playfair Display",serif;font-size:2.3rem;margin-bottom:1rem;color:#f4f1e8}
 .lesson-content p{color:#b8c0db;font-size:1.05rem;line-height:1.8}
-.lesson-link{display:inline-block;margin-top:1.4rem;padding:12px 22px;border:1px solid #c9772a;border-radius:999px;color:#c9772a;text-decoration:none;font-weight:600;transition:.3s}
+.lesson-link{display:inline-block;margin-top:1.4rem;padding:12px 22px;border:1px solid #c9772a;border-radius:999px;color:#c9772a;text-decoration:none;font-weight:600;transition:.3s;cursor:pointer}
 .lesson-link:hover{background:#c9772a;color:#fff}
-.lesson-slideshow{display:none;margin-top:1.5rem}
+.lesson-slideshow{display:none;margin-top:1.5rem;padding:1.2rem;background:rgba(0,0,0,0.2);border-radius:12px}
 .lesson-slideshow.active{display:block}
-.lesson-slideshow iframe{width:100%;height:800px;border:none;border-radius:16px;background:white;box-shadow:0 15px 40px rgba(0,0,0,.15)}
+
+/* PDF Viewer */
+.pdf-viewer-wrap{display:flex;flex-direction:column;gap:0.7rem}
+.pdf-canvas-box{background:#fff;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:200px;position:relative}
+.pdf-canvas-box canvas{max-width:100%;display:block;margin:0 auto}
+.pdf-spinner{position:absolute;display:flex;flex-direction:column;align-items:center;gap:0.8rem;color:rgba(255,255,255,0.5);font-size:0.82rem;letter-spacing:0.1em}
+.pdf-spinner .spin{width:32px;height:32px;border:3px solid rgba(201,119,42,0.3);border-top-color:#c9772a;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pdf-controls-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:0.5rem 1rem}
+.pdf-nav-btn{background:rgba(201,119,42,0.15);border:1px solid rgba(201,119,42,0.4);color:#c9772a;padding:0.35rem 1rem;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.pdf-nav-btn:hover:not(:disabled){background:#c9772a;color:#fff}
+.pdf-nav-btn:disabled{opacity:0.25;cursor:default}
+.pdf-page-counter{font-size:0.8rem;color:rgba(245,240,232,0.55);letter-spacing:0.08em}
+.pdf-download-link{font-size:0.75rem;color:#c9772a;font-weight:600;text-decoration:none;letter-spacing:0.05em}
+.pdf-download-link:hover{text-decoration:underline}
+.pdf-error{color:rgba(255,100,100,0.8);font-size:0.85rem;padding:1.5rem;text-align:center}
 
 </style>
 
@@ -612,12 +636,17 @@
 <div class="lesson-content">
 <h3>Máy tính và các thiết bị ngoại vi</h3>
 <p>Mục tiêu: Rèn luyện kỹ năng tạo, sao chép, di chuyển và quản lý tệp tin, thư mục trên máy tính.</p>
-<a href="#" class="lesson-link" onclick="toggleSlide('slide1');return false;">Bấm để xem bài làm →</a>
-<div id="slide1" class="lesson-slideshow">
-<iframe src="https://drive.google.com/file/d/1MJYchmoTLAAeIJjGuFpl6VWgVfAJT91w/preview" width="100%" height="800px" style="border:none;border-radius:12px;display:block;" allow="autoplay"></iframe>
-<p style="margin-top:0.6rem;font-size:0.78rem;text-align:right;">
-  <a href="https://drive.google.com/file/d/1MJYchmoTLAAeIJjGuFpl6VWgVfAJT91w/view?usp=sharing" target="_blank" style="color:#c9772a;font-weight:600;">⬇ Tải PDF về máy</a>
-</p>
+<a class="lesson-link" onclick="togglePDF(this,'bai1.pdf','dl1');return false;">Bấm để xem bài làm →</a>
+<div class="lesson-slideshow">
+  <div class="pdf-viewer-wrap">
+    <div class="pdf-canvas-box"><div class="pdf-spinner"><div class="spin"></div>Đang tải...</div><canvas></canvas></div>
+    <div class="pdf-controls-bar">
+      <button class="pdf-nav-btn" onclick="pdfPrev(this)">← Trước</button>
+      <span class="pdf-page-counter">Trang 1 / 1</span>
+      <button class="pdf-nav-btn" onclick="pdfNext(this)">Tiếp →</button>
+      <a id="dl1" class="pdf-download-link" href="bai1.pdf" download>⬇ Tải PDF</a>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -627,12 +656,17 @@
 <div class="lesson-content">
 <h3>Khai thác dữ liệu và thông tin</h3>
 <p>Mục tiêu: Phát triển khả năng tìm kiếm, đánh giá và lựa chọn nguồn thông tin học thuật đáng tin cậy.</p>
-<a href="#" class="lesson-link" onclick="toggleSlide('slide2');return false;">Bấm để xem bài làm →</a>
-<div id="slide2" class="lesson-slideshow">
-<iframe src="https://drive.google.com/file/d/1ZqzobZSaQMe1qZc96D2xgCb-TbPJaisc/preview" width="100%" height="800px" style="border:none;border-radius:12px;display:block;" allow="autoplay"></iframe>
-<p style="margin-top:0.6rem;font-size:0.78rem;text-align:right;">
-  <a href="https://drive.google.com/file/d/1ZqzobZSaQMe1qZc96D2xgCb-TbPJaisc/view?usp=sharing" target="_blank" style="color:#c9772a;font-weight:600;">⬇ Tải PDF về máy</a>
-</p>
+<a class="lesson-link" onclick="togglePDF(this,'bai2.pdf','dl2');return false;">Bấm để xem bài làm →</a>
+<div class="lesson-slideshow">
+  <div class="pdf-viewer-wrap">
+    <div class="pdf-canvas-box"><div class="pdf-spinner"><div class="spin"></div>Đang tải...</div><canvas></canvas></div>
+    <div class="pdf-controls-bar">
+      <button class="pdf-nav-btn" onclick="pdfPrev(this)">← Trước</button>
+      <span class="pdf-page-counter">Trang 1 / 1</span>
+      <button class="pdf-nav-btn" onclick="pdfNext(this)">Tiếp →</button>
+      <a id="dl2" class="pdf-download-link" href="bai2.pdf" download>⬇ Tải PDF</a>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -642,12 +676,17 @@
 <div class="lesson-content">
 <h3>Tổng quan về trí tuệ nhân tạo</h3>
 <p>Mục tiêu: Ứng dụng các công cụ trực tuyến để nâng cao hiệu quả làm việc và cộng tác nhóm.</p>
-<a href="#" class="lesson-link" onclick="toggleSlide('slide3');return false;">Bấm để xem bài làm →</a>
-<div id="slide3" class="lesson-slideshow">
-<iframe src="https://drive.google.com/file/d/1aTmJ5u8NKVp6usQCBrd1nlXUcq6r_nwt/preview" width="100%" height="800px" style="border:none;border-radius:12px;display:block;" allow="autoplay"></iframe>
-<p style="margin-top:0.6rem;font-size:0.78rem;text-align:right;">
-  <a href="https://drive.google.com/file/d/1aTmJ5u8NKVp6usQCBrd1nlXUcq6r_nwt/view?usp=sharing" target="_blank" style="color:#c9772a;font-weight:600;">⬇ Tải PDF về máy</a>
-</p>
+<a class="lesson-link" onclick="togglePDF(this,'bai3.pdf','dl3');return false;">Bấm để xem bài làm →</a>
+<div class="lesson-slideshow">
+  <div class="pdf-viewer-wrap">
+    <div class="pdf-canvas-box"><div class="pdf-spinner"><div class="spin"></div>Đang tải...</div><canvas></canvas></div>
+    <div class="pdf-controls-bar">
+      <button class="pdf-nav-btn" onclick="pdfPrev(this)">← Trước</button>
+      <span class="pdf-page-counter">Trang 1 / 1</span>
+      <button class="pdf-nav-btn" onclick="pdfNext(this)">Tiếp →</button>
+      <a id="dl3" class="pdf-download-link" href="bai3.pdf" download>⬇ Tải PDF</a>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -657,12 +696,17 @@
 <div class="lesson-content">
 <h3>Giao tiếp và hợp tác trong môi trường số</h3>
 <p>Mục tiêu: Khai thác AI tạo sinh nhằm hỗ trợ xây dựng nội dung và thiết kế sản phẩm sáng tạo.</p>
-<a href="#" class="lesson-link" onclick="toggleSlide('slide4');return false;">Bấm để xem bài làm →</a>
-<div id="slide4" class="lesson-slideshow">
-<iframe src="https://drive.google.com/file/d/1d5kDayzTjlSDAKQWIGImp0j6mJv8cTPi/preview" width="100%" height="800px" style="border:none;border-radius:12px;display:block;" allow="autoplay"></iframe>
-<p style="margin-top:0.6rem;font-size:0.78rem;text-align:right;">
-  <a href="https://drive.google.com/file/d/1d5kDayzTjlSDAKQWIGImp0j6mJv8cTPi/view?usp=sharing" target="_blank" style="color:#c9772a;font-weight:600;">⬇ Tải PDF về máy</a>
-</p>
+<a class="lesson-link" onclick="togglePDF(this,'bai4.pdf','dl4');return false;">Bấm để xem bài làm →</a>
+<div class="lesson-slideshow">
+  <div class="pdf-viewer-wrap">
+    <div class="pdf-canvas-box"><div class="pdf-spinner"><div class="spin"></div>Đang tải...</div><canvas></canvas></div>
+    <div class="pdf-controls-bar">
+      <button class="pdf-nav-btn" onclick="pdfPrev(this)">← Trước</button>
+      <span class="pdf-page-counter">Trang 1 / 1</span>
+      <button class="pdf-nav-btn" onclick="pdfNext(this)">Tiếp →</button>
+      <a id="dl4" class="pdf-download-link" href="bai4.pdf" download>⬇ Tải PDF</a>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -672,12 +716,17 @@
 <div class="lesson-content">
 <h3>Sáng tạo nội dung số</h3>
 <p>Mục tiêu: Nâng cao kỹ năng viết prompt rõ ràng để cải thiện chất lượng phản hồi từ AI.</p>
-<a href="#" class="lesson-link" onclick="toggleSlide('slide5');return false;">Bấm để xem bài làm →</a>
-<div id="slide5" class="lesson-slideshow">
-<iframe src="https://drive.google.com/file/d/1Q9XEZfuSVTNe3hYaaisqQtGdCqTK_uTV/preview" width="100%" height="800px" style="border:none;border-radius:12px;display:block;" allow="autoplay"></iframe>
-<p style="margin-top:0.6rem;font-size:0.78rem;text-align:right;">
-  <a href="https://drive.google.com/file/d/1Q9XEZfuSVTNe3hYaaisqQtGdCqTK_uTV/view?usp=sharing" target="_blank" style="color:#c9772a;font-weight:600;">⬇ Tải PDF về máy</a>
-</p>
+<a class="lesson-link" onclick="togglePDF(this,'bai5.pdf','dl5');return false;">Bấm để xem bài làm →</a>
+<div class="lesson-slideshow">
+  <div class="pdf-viewer-wrap">
+    <div class="pdf-canvas-box"><div class="pdf-spinner"><div class="spin"></div>Đang tải...</div><canvas></canvas></div>
+    <div class="pdf-controls-bar">
+      <button class="pdf-nav-btn" onclick="pdfPrev(this)">← Trước</button>
+      <span class="pdf-page-counter">Trang 1 / 1</span>
+      <button class="pdf-nav-btn" onclick="pdfNext(this)">Tiếp →</button>
+      <a id="dl5" class="pdf-download-link" href="bai5.pdf" download>⬇ Tải PDF</a>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -687,12 +736,17 @@
 <div class="lesson-content">
 <h3>An toàn và liêm chính học thuật trong môi trường số</h3>
 <p>Mục tiêu: Hình thành nhận thức về việc sử dụng AI minh bạch, có trách nhiệm trong học tập.</p>
-<a href="#" class="lesson-link" onclick="toggleSlide('slide6');return false;">Bấm để xem bài làm →</a>
-<div id="slide6" class="lesson-slideshow">
-<iframe src="https://drive.google.com/file/d/1FRa7lDzEfdBm6o6ssCpSQ8dLCp5kL-nf/preview" width="100%" height="800px" style="border:none;border-radius:12px;display:block;" allow="autoplay"></iframe>
-<p style="margin-top:0.6rem;font-size:0.78rem;text-align:right;">
-  <a href="https://drive.google.com/file/d/1FRa7lDzEfdBm6o6ssCpSQ8dLCp5kL-nf/view?usp=sharing" target="_blank" style="color:#c9772a;font-weight:600;">⬇ Tải PDF về máy</a>
-</p>
+<a class="lesson-link" onclick="togglePDF(this,'bai6.pdf','dl6');return false;">Bấm để xem bài làm →</a>
+<div class="lesson-slideshow">
+  <div class="pdf-viewer-wrap">
+    <div class="pdf-canvas-box"><div class="pdf-spinner"><div class="spin"></div>Đang tải...</div><canvas></canvas></div>
+    <div class="pdf-controls-bar">
+      <button class="pdf-nav-btn" onclick="pdfPrev(this)">← Trước</button>
+      <span class="pdf-page-counter">Trang 1 / 1</span>
+      <button class="pdf-nav-btn" onclick="pdfNext(this)">Tiếp →</button>
+      <a id="dl6" class="pdf-download-link" href="bai6.pdf" download>⬇ Tải PDF</a>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -735,17 +789,7 @@
 
 
 <script>
-  // PDF.js worker
-
-  let pdfDoc = null;
-  let currentPage = 1;
-  let totalPages = 0;
-  let pdfVisible = false;
-
-  function toggleSlide(id){
-    document.getElementById(id).classList.toggle('active');
-  }
-
+  // ===== NAV =====
   function showPage(name, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tnav-btn').forEach(b => b.classList.remove('active'));
@@ -766,87 +810,96 @@
     }
   }
 
-  function togglePDFSlideshow() {
-    const wrapper = document.getElementById('pdf-slideshow-wrapper');
-    const link = document.getElementById('pdf-toggle-link');
-    pdfVisible = !pdfVisible;
-    wrapper.style.display = pdfVisible ? 'block' : 'none';
-    link.textContent = pdfVisible ? 'Ẩn bài làm ▴' : 'Bấm để xem bài làm →';
-  }
+  // ===== PDF.js LOCAL VIEWER =====
+  // pdfState lưu trạng thái từng bài: { doc, currentPage, totalPages, rendering }
+  const pdfState = new WeakMap();
 
-  function loadPDF(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const typedArray = new Uint8Array(e.target.result);
-      pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
-        pdfDoc = pdf;
-        totalPages = pdf.numPages;
-        currentPage = 1;
-        document.getElementById('pdf-upload-area').style.display = 'none';
-        document.getElementById('pdf-viewer').classList.add('active');
-        document.getElementById('pdf-change-btn').style.display = 'inline-block';
-        renderPage(currentPage);
-      });
-    };
-    reader.readAsArrayBuffer(file);
-  }
+  function togglePDF(linkEl, pdfFile, dlId) {
+    const slideshow = linkEl.nextElementSibling;
+    const isOpen = slideshow.classList.contains('active');
 
-  // Drag & drop support
-  const uploadArea = document.getElementById('pdf-upload-area');
-  if (uploadArea) {
-    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; });
-    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = ''; });
-    uploadArea.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadArea.style.borderColor = '';
-      const file = e.dataTransfer.files[0];
-      if (file && file.type === 'application/pdf') {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        document.getElementById('pdf-file-input').files = dt.files;
-        loadPDF(document.getElementById('pdf-file-input'));
-      }
+    if (isOpen) {
+      slideshow.classList.remove('active');
+      linkEl.textContent = 'Bấm để xem bài làm →';
+      return;
+    }
+
+    slideshow.classList.add('active');
+    linkEl.textContent = 'Ẩn bài làm ▴';
+
+    // Nếu đã load rồi thì không load lại
+    if (pdfState.has(slideshow)) return;
+
+    const canvasBox = slideshow.querySelector('.pdf-canvas-box');
+    const canvas = canvasBox.querySelector('canvas');
+    const spinner = canvasBox.querySelector('.pdf-spinner');
+    const counter = slideshow.querySelector('.pdf-page-counter');
+    const prevBtn = slideshow.querySelector('.pdf-nav-btn:first-of-type');
+    const nextBtn = slideshow.querySelector('.pdf-nav-btn:last-of-type');
+
+    const state = { doc: null, currentPage: 1, totalPages: 0, rendering: false };
+    pdfState.set(slideshow, state);
+
+    // Store refs on state for nav buttons to access
+    state.canvasBox = canvasBox;
+    state.canvas = canvas;
+    state.spinner = spinner;
+    state.counter = counter;
+    state.prevBtn = prevBtn;
+    state.nextBtn = nextBtn;
+
+    // Store state on buttons so nav functions can find it
+    prevBtn._pdfState = state;
+    nextBtn._pdfState = state;
+
+    pdfjsLib.getDocument(pdfFile).promise.then(doc => {
+      state.doc = doc;
+      state.totalPages = doc.numPages;
+      spinner.style.display = 'none';
+      renderPDFPage(state);
+    }).catch(() => {
+      spinner.style.display = 'none';
+      canvasBox.innerHTML = '<div class="pdf-error">⚠ Không tìm thấy file PDF.<br><small>Hãy đảm bảo file <strong>' + pdfFile + '</strong> đã được đưa vào repo.</small></div>';
     });
   }
 
-  function renderPage(num) {
-    document.getElementById('pdf-loading').style.display = 'block';
-    document.getElementById('pdf-canvas').style.display = 'none';
-    pdfDoc.getPage(num).then(function(page) {
-      const container = document.getElementById('pdf-canvas-container');
-      const scale = container.clientWidth / page.getViewport({ scale: 1 }).width;
-      const viewport = page.getViewport({ scale: Math.min(scale, 2) });
-      const canvas = document.getElementById('pdf-canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      page.render({ canvasContext: ctx, viewport }).promise.then(function() {
-        document.getElementById('pdf-loading').style.display = 'none';
-        canvas.style.display = 'block';
-        document.getElementById('pdf-page-info').textContent = `Trang ${num} / ${totalPages}`;
-        document.getElementById('pdf-prev').disabled = num <= 1;
-        document.getElementById('pdf-next').disabled = num >= totalPages;
+  function renderPDFPage(state) {
+    if (state.rendering) return;
+    state.rendering = true;
+    state.spinner.style.display = 'flex';
+    state.canvas.style.opacity = '0.3';
+
+    state.doc.getPage(state.currentPage).then(page => {
+      const containerWidth = state.canvasBox.clientWidth || 800;
+      const scale = containerWidth / page.getViewport({ scale: 1 }).width;
+      const viewport = page.getViewport({ scale: Math.min(scale, 2.5) });
+      const ctx = state.canvas.getContext('2d');
+      state.canvas.width = viewport.width;
+      state.canvas.height = viewport.height;
+
+      page.render({ canvasContext: ctx, viewport }).promise.then(() => {
+        state.rendering = false;
+        state.spinner.style.display = 'none';
+        state.canvas.style.opacity = '1';
+        state.counter.textContent = 'Trang ' + state.currentPage + ' / ' + state.totalPages;
+        state.prevBtn.disabled = state.currentPage <= 1;
+        state.nextBtn.disabled = state.currentPage >= state.totalPages;
       });
     });
   }
 
-  function changePage(delta) {
-    const newPage = currentPage + delta;
-    if (newPage < 1 || newPage > totalPages) return;
-    currentPage = newPage;
-    renderPage(currentPage);
+  function pdfPrev(btn) {
+    const state = btn._pdfState;
+    if (!state || state.currentPage <= 1) return;
+    state.currentPage--;
+    renderPDFPage(state);
   }
 
-  function resetPDF() {
-    pdfDoc = null; currentPage = 1; totalPages = 0;
-    document.getElementById('pdf-upload-area').style.display = 'block';
-    document.getElementById('pdf-viewer').classList.remove('active');
-    document.getElementById('pdf-change-btn').style.display = 'none';
-    document.getElementById('pdf-file-input').value = '';
-    document.getElementById('pdf-canvas').style.display = 'none';
-    document.getElementById('pdf-loading').style.display = 'block';
+  function pdfNext(btn) {
+    const state = btn._pdfState;
+    if (!state || state.currentPage >= state.totalPages) return;
+    state.currentPage++;
+    renderPDFPage(state);
   }
 </script>
 
